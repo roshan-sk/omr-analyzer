@@ -3,3 +3,5 @@ __pycache__/
 .env
 .vscode/
 config.py
+
+static/uploads/
