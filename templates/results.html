@@ -1,21 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Results</title>
+    <title>OMR Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px auto;
+            width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .card p {
+            margin: 5px 0;
+        }
+
+        table {
+            width: 90%;
+            margin: 30px auto;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        tr:hover {
+            background: #e6f0ff;
+        }
+    </style>
 </head>
 <body>
 
-<h2>Student Result</h2>
+<h2>📊 OMR Results</h2>
 
 {% if student %}
-    <p>Name: {{ student.name }}</p>
-    <p>Centre: {{ student.centre_number }}</p>
-    <p>Level: {{ student.level }}</p>
-    <p>Score: {{ student.score }}</p>
+<div class="card">
+    <h3>Latest Result</h3>
+    <p><strong>Name:</strong> {{ student.name }}</p>
+    <p><strong>Centre:</strong> {{ student.centre_number }}</p>
+    <p><strong>Level:</strong> {{ student.level }}</p>
+    <p><strong>Score:</strong> {{ student.score }}</p>
+</div>
 {% endif %}
 
-<h3>All Students</h3>
-<table border="1">
+<table>
 <tr>
     <th>Name</th>
     <th>Centre</th>

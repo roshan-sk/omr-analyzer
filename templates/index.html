@@ -2,24 +2,120 @@
 <html>
 <head>
     <title>OMR Upload</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+        }
+
+        .container {
+            width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .upload-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result-card {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .answers {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+        }
+
+        .ans-box {
+            padding: 8px;
+            text-align: center;
+            border-radius: 5px;
+            background: #e9ecef;
+            font-size: 14px;
+        }
+
+        .empty {
+            background: #ffe5e5;
+        }
+
+        .multiple {
+            background: #fff3cd;
+        }
+
+        .correct {
+            background: #d4edda;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
-<h2>Upload OMR Sheet</h2>
+<div class="container">
 
-<form id="uploadForm">
-    <input type="file" name="file" id="fileInput" required>
-    <button type="submit">Upload</button>
-</form>
+    <h2>📄 OMR Processing</h2>
 
-<h3>Result:</h3>
-<pre id="result"></pre>
+    <div class="upload-box">
+        <form id="uploadForm">
+            <input type="file" id="fileInput" required>
+            <br><br>
+            <button type="submit">Upload</button>
+        </form>
+        <div class="loading" id="loading">Processing...</div>
+    </div>
+
+    <div id="result"></div>
+
+</div>
 
 <script>
 document.getElementById("uploadForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
     const fileInput = document.getElementById("fileInput");
+    const loading = document.getElementById("loading");
+    const resultDiv = document.getElementById("result");
+
+    loading.style.display = "block";
+    resultDiv.innerHTML = "";
+
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
 
@@ -29,9 +125,42 @@ document.getElementById("uploadForm").addEventListener("submit", async function(
     });
 
     const data = await response.json();
+    loading.style.display = "none";
 
-    document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+    renderResult(data);
 });
+
+function renderResult(data) {
+    let html = `
+        <div class="result-card">
+            <div class="info">
+                <div><strong>Name:</strong> ${data.name}</div>
+                <div><strong>Centre:</strong> ${data.centre_number}</div>
+            </div>
+            <div class="info">
+                <div><strong>Level:</strong> ${data.level}</div>
+                <div><strong>Score:</strong> ${data.score}</div>
+            </div>
+
+            <h3>Answers</h3>
+            <div class="answers">
+    `;
+
+    for (let i = 1; i <= 40; i++) {
+        let ans = data.answers[i] || "";
+
+        let cls = "ans-box";
+        if (!ans) cls += " empty";
+        else if (ans.includes("&")) cls += " multiple";
+        else cls += " correct";
+
+        html += `<div class="${cls}">Q${i}<br>${ans || "-"}</div>`;
+    }
+
+    html += `</div></div>`;
+
+    document.getElementById("result").innerHTML = html;
+}
 </script>
 
 </body>

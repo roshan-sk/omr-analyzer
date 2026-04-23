@@ -201,7 +201,7 @@ def detect_center_digits(center_area, num_cols=5, debug=False):
             inner  = row[int(0.2*hc):int(0.8*hc), int(0.2*wc):int(0.8*wc)]
             scores.append(cv2.countNonZero(inner) / inner.size)
         best_idx, top1, top2 = _top_two_scores(scores)
-        result.append(DIGITS[best_idx] if top1 >= 0.10 and (top1 - top2) > 0.04 else "_")
+        result.append(DIGITS[best_idx] if top1 >= 0.10 and (top1 - top2) > 0.04 else "")
     return "".join(result)
 
 
@@ -261,9 +261,9 @@ def detect_all_answers(answer_area, debug=False):
             q              = g * ROWS_PER_GROUP + ri + 1
             status, answer = _classify_bubble(scores, threshold)
             results[q]     = {
-                "status":    status,
-                "answer":    answer,
-                "scores":    scores,
+                "status": status,
+                "answer": answer,
+                "scores": scores,
                 "threshold": threshold,
             }
 
@@ -274,7 +274,6 @@ def detect_all_answers(answer_area, debug=False):
 
 
 def _draw_answer_debug(answer_area, group_cache, results, gw):
-    """Overlay coloured circles and labels on the answer area (debug mode)."""
     dbg = answer_area.copy()
 
     for item in group_cache:
@@ -284,9 +283,9 @@ def _draw_answer_debug(answer_area, group_cache, results, gw):
         gx = g * gw
 
         for ri, ry, scores, bcs in rows:
-            q      = g * ROWS_PER_GROUP + ri + 1
-            info   = results[q]
-            thr    = info["threshold"]
+            q = g * ROWS_PER_GROUP + ri + 1
+            info = results[q]
+            thr = info["threshold"]
             status = info["status"]
             filled = [i for i, s in enumerate(scores) if s >= thr]
 
@@ -307,7 +306,6 @@ def _draw_answer_debug(answer_area, group_cache, results, gw):
 
                 cv2.circle(dbg, (gx + bx, by), br + 2, color, thick)
 
-            # label anomalous rows
             lx, ly = gx + 4, int(ry)
             if status == "EMPTY":
                 cv2.putText(dbg, f"Q{q}:EMPTY", (lx, ly - 14),
@@ -362,7 +360,7 @@ def process_sheet(path, debug=False):
     img = auto_straighten(auto_straighten(image))
 
     name_area = extract_name_area(img, debug=debug)
-    name      = detect_letters(name_area, num_cols=20) if name_area is not None else ""
+    name = detect_letters(name_area, num_cols=20) if name_area is not None else ""
 
     centre = ""
     if name_area is not None:
@@ -370,68 +368,23 @@ def process_sheet(path, debug=False):
         if centre_area is not None:
             centre = detect_center_digits(centre_area, num_cols=5)
 
-    answer_area             = extract_answer_area(img, debug=debug)
-    answers, threshold      = detect_all_answers(answer_area, debug=debug)
+    answer_area = extract_answer_area(img, debug=debug)
+    answers, threshold = detect_all_answers(answer_area, debug=debug)
     
     dob = extract_dob_area(img, centre_area, debug=True)
     
     issues = {
-        "empty":    [q for q, v in answers.items() if v["status"] == "EMPTY"],
+        "empty": [q for q, v in answers.items() if v["status"] == "EMPTY"],
         "multiple": {q: v["answer"] for q, v in answers.items() if v["status"] == "MULTIPLE"},
     }
 
     return {
-        "name":          name.strip(),
+        "name": name.strip(),
         "centre_number": centre,
-        "answers":       {q: v["answer"] for q, v in answers.items() if v["status"] == "OK"},
-        "threshold":     threshold,
-        "issues":        issues,
-        "raw":           answers,
+        "answers": {q: v["answer"] for q, v in answers.items() if v["status"] == "OK"},
+        "raw": answers,
     }
 
-
-# def main():
-#     files = ["1.jpg", "2.jpg", "3.jpg"]
-
-#     DEBUG_FILE = "1.jpg"   # 👈 change this anytime
-
-#     for path in files:
-#         debug = (path == DEBUG_FILE)   # 👈 only one file debug
-
-#         try:
-#             result = process_sheet(path, debug=debug)
-
-#             print(f"\nFile: {path}")
-#             print(f"Name: {result['name']}")
-#             print(f"Centre: {result['centre_number']}")
-#             print(f"Threshold: {result['threshold']:.1f}")
-
-#             answers_formatted = []
-#             raw = result["raw"]
-
-#             for q in range(1, 41):
-#                 v = raw.get(q, {})
-#                 status = v.get("status")
-#                 answer = v.get("answer")
-
-#                 if status == "OK":
-#                     val = answer
-#                 elif status == "MULTIPLE":
-#                     val = "&".join(answer)   # ['A','B'] → A&B
-#                 elif status == "EMPTY":
-#                     val = "·"
-#                 else:
-#                     val = "?"
-
-#                 answers_formatted.append(f"Q {q}:{val}")
-
-#             print(answers_formatted)
-
-#         except FileNotFoundError as e:
-#             print(f"Skipping: {e}")
-
-# if __name__ == "__main__":
-#     main()
 
 def process_omr_file(file_path):
     try:
@@ -449,9 +402,9 @@ def process_omr_file(file_path):
             elif status == "MULTIPLE":
                 formatted_answers[str(q)] = "&".join(answer)
             elif status == "EMPTY":
-                formatted_answers[str(q)] = None
+                formatted_answers[str(q)] = "EMPTY"
             else:
-                formatted_answers[str(q)] = None
+                formatted_answers[str(q)] = ""
 
         return {
             "name": result["name"],
