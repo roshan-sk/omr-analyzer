@@ -6,20 +6,22 @@ LETTERS  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 DIGITS   = "0123456789"
 OPTIONS  = "ABCDE"
 
+LEVEL_OPTIONS = ["Lower Primary", "Upper Primary", "Junior", "Intermediate", "Senior", "Open"]
+
 NAME_SHIFTS = dict(left=1, right=10, top=-30, bottom=5)
 
-NUM_ANSWER_GROUPS    = 4
-ROWS_PER_GROUP       = 10
+NUM_ANSWER_GROUPS = 4
+ROWS_PER_GROUP = 10
 OPTIONS_PER_QUESTION = 5
 
-HOUGH_DP       = 1.2
+HOUGH_DP = 1.2
 HOUGH_MIN_DIST = 14
-HOUGH_PARAM1   = 50
-HOUGH_PARAM2   = 18
-HOUGH_MIN_R    = 8
-HOUGH_MAX_R    = 18
+HOUGH_PARAM1 = 50
+HOUGH_PARAM2 = 18
+HOUGH_MIN_R = 8
+HOUGH_MAX_R = 18
 
-CLUSTER_GAP = 18 
+CLUSTER_GAP = 18
 
 COLOR_FILLED = (0, 200,   0)
 COLOR_MULTI  = (0,   0, 255)
@@ -102,7 +104,6 @@ def _classify_bubble(scores, threshold):
     return "MULTIPLE", [OPTIONS[i] for i in filled]
 
 
-
 def auto_straighten(image):
     gray  = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(gray, 50, 150)
@@ -142,7 +143,7 @@ def detect_bubble_grid(image, debug=False):
     y2  = int(np.percentile([b[1] + b[3] for b in left], 99))
     if debug:
         dbg = image.copy(); cv2.rectangle(dbg, (x1,y1), (x2,y2), (0,255,0), 2)
-        # cv2.imshow("Bubble Grid", dbg)
+        cv2.imshow("Bubble Grid", dbg)
     return x1, y1, x2, y2
 
 
@@ -158,7 +159,7 @@ def extract_name_area(image, debug=False):
     y2 = _clamp(y2 + NAME_SHIFTS["bottom"], 0, h)
     if debug:
         dbg = image.copy(); cv2.rectangle(dbg,(x1,y1),(x2,y2),(255,0,0),2)
-        # cv2.imshow("Name Area", dbg)
+        cv2.imshow("Name Area", dbg)
     return image[y1:y2, x1:x2]
 
 
@@ -184,7 +185,7 @@ def extract_center_number_area(image, name_area, debug=False):
     y2 = _clamp(y1            + int(0.40  * h_name), 0, h_img)
     if debug:
         dbg = image.copy(); cv2.rectangle(dbg,(x1,y1),(x2,y2),(255,0,0),2)
-        # cv2.imshow("Centre Number Area", dbg)
+        cv2.imshow("Centre Number Area", dbg)
     return image[y1:y2, x1:x2]
 
 
@@ -201,9 +202,118 @@ def detect_center_digits(center_area, num_cols=5, debug=False):
             inner  = row[int(0.2*hc):int(0.8*hc), int(0.2*wc):int(0.8*wc)]
             scores.append(cv2.countNonZero(inner) / inner.size)
         best_idx, top1, top2 = _top_two_scores(scores)
-        result.append(DIGITS[best_idx] if top1 >= 0.10 and (top1 - top2) > 0.04 else "")
+        result.append(DIGITS[best_idx] if top1 >= 0.10 and (top1 - top2) > 0.04 else "_")
     return "".join(result)
 
+
+def extract_level_area(image):
+    h, w = image.shape[:2]
+    # The level bubble row sits at ~13–15.7% of image height
+    return image[int(0.130 * h):int(0.157 * h), int(0.01 * w):int(0.99 * w)]
+
+
+def detect_level(image, debug=False):
+    lev_row = extract_level_area(image)
+    gray    = cv2.cvtColor(lev_row, cv2.COLOR_BGR2GRAY)
+    row_w   = lev_row.shape[1]
+
+    cs = cv2.HoughCircles(
+        gray, cv2.HOUGH_GRADIENT,
+        dp=1.2, minDist=80,
+        param1=50, param2=12,
+        minRadius=7, maxRadius=15,
+    )
+    if cs is None:
+        return None
+
+    cs = np.round(cs[0]).astype(int)
+
+    best_c, best_d = None, 0.0
+    for c in cs:
+        bx, by, br = int(c[0]), int(c[1]), int(c[2])
+        patch = gray[max(0, by - br + 2): by + br - 2,
+                     max(0, bx - br + 2): bx + br - 2]
+        d = float(255 - np.mean(patch)) if patch.size > 0 else 0.0
+        if d > best_d:
+            best_d, best_c = d, c
+
+    if best_c is None or best_d < 40:
+        return None
+
+    sec_idx = int(best_c[0] / (row_w / 6))
+    sec_idx = max(0, min(5, sec_idx))
+
+    if debug:
+        dbg = lev_row.copy()
+        cv2.circle(dbg, (int(best_c[0]), int(best_c[1])), int(best_c[2]) + 2,
+                   COLOR_FILLED, 2)
+        cv2.imshow("Level Debug", dbg)
+
+    return LEVEL_OPTIONS[sec_idx]
+
+
+def extract_dob_area(image, debug=False):
+    h, w = image.shape[:2]
+    y1 = int(0.448 * h)
+    y2 = int(0.624 * h)
+    x1 = int(0.698 * w)
+    x2 = int(0.998 * w)
+    if debug:
+        dbg = image.copy()
+        cv2.rectangle(dbg, (x1, y1), (x2, y2), (255, 165, 0), 2)
+        cv2.imshow("DOB Area", dbg)
+    return image[y1:y2, x1:x2]
+
+
+def detect_dob(image, debug=False):
+    dob_area = extract_dob_area(image, debug=debug)
+    gray     = cv2.cvtColor(dob_area, cv2.COLOR_BGR2GRAY)
+
+    cs = _detect_circles(gray)
+    if cs is None:
+        return "_" * 8
+
+    col_c = sorted(_cluster_centers([int(c[0]) for c in cs], gap=15))[:8]
+    row_c = sorted(_cluster_centers([int(c[1]) for c in cs], gap=15))[:10]
+
+    dh, dw = dob_area.shape[:2]
+    if len(col_c) < 8:
+        col_c = [int((i + 0.5) * dw / 8) for i in range(8)]
+    if len(row_c) < 10:
+        row_c = [int((i + 0.5) * dh / 10) for i in range(10)]
+
+    all_scores, grid = [], []
+    for cx in col_c:
+        scores = []
+        for ry in row_c:
+            bc = min(cs, key=lambda c: (int(c[0]) - cx)**2 + (int(c[1]) - ry)**2)
+            d  = _bubble_darkness(gray, int(bc[0]), int(bc[1]), int(bc[2]))
+            scores.append(d)
+            all_scores.append(d)
+        grid.append(scores)
+
+    arr      = np.array(sorted(all_scores))
+    gaps     = [(arr[i + 1] - arr[i], float((arr[i] + arr[i + 1]) / 2))
+                for i in range(len(arr) - 1)]
+    best_gap, threshold = max(gaps, key=lambda x: x[0])
+
+    if best_gap <= 10:
+        return "_" * 8
+
+    result = []
+    for scores in grid:
+        filled = [j for j, s in enumerate(scores) if s >= threshold]
+        if len(filled) == 1:
+            result.append(DIGITS[filled[0]])
+        else:
+            result.append("_")
+    return "".join(result)
+
+
+def format_dob(raw):
+    if len(raw) == 8:
+        return f"{raw[0:2]}/{raw[2:4]}/{raw[4:8]}"
+    return raw
 
 
 def extract_answer_area(image, debug=False):
@@ -213,12 +323,11 @@ def extract_answer_area(image, debug=False):
     if debug:
         dbg = image.copy()
         cv2.rectangle(dbg, (x1,y1), (x2,y2), (0,200,0), 2)
-        # cv2.imshow("Answer Area", cv2.resize(dbg, (800,900)))
+        cv2.imshow("Answer Area", cv2.resize(dbg, (800,900)))
     return image[y1:y2, x1:x2]
 
 
 def detect_all_answers(answer_area, debug=False):
-
     aw      = answer_area.shape[1]
     gw      = aw // NUM_ANSWER_GROUPS
 
@@ -249,7 +358,7 @@ def detect_all_answers(answer_area, debug=False):
             rows.append((ri, ry, scores, bcs))
 
         group_cache.append((g, gray, col_c, rows))
-
+        
     threshold = _find_adaptive_threshold(all_scores)
 
     results = {}
@@ -260,12 +369,22 @@ def detect_all_answers(answer_area, debug=False):
         for ri, ry, scores, bcs in rows:
             q              = g * ROWS_PER_GROUP + ri + 1
             status, answer = _classify_bubble(scores, threshold)
-            results[q]     = {
-                "status": status,
-                "answer": answer,
-                "scores": scores,
-                "threshold": threshold,
-            }
+
+            if status == "MULTIPLE":
+                results[q] = {
+                    "status": "MULTIPLE",
+                    "answer": answer,
+                    "scores": scores,
+                    "threshold": threshold,
+                    "note": f"{'&'.join(answer)}"
+                }
+            else:
+                results[q] = {
+                    "status": status,
+                    "answer": answer,
+                    "scores": scores,
+                    "threshold": threshold,
+                }
 
     if debug:
         _draw_answer_debug(answer_area, group_cache, results, gw)
@@ -283,10 +402,11 @@ def _draw_answer_debug(answer_area, group_cache, results, gw):
         gx = g * gw
 
         for ri, ry, scores, bcs in rows:
-            q = g * ROWS_PER_GROUP + ri + 1
-            info = results[q]
-            thr = info["threshold"]
+            q      = g * ROWS_PER_GROUP + ri + 1
+            info   = results[q]
+            thr    = info["threshold"]
             status = info["status"]
+            note   = info.get("note", "")
             filled = [i for i, s in enumerate(scores) if s >= thr]
 
             for ci, bc in enumerate(bcs):
@@ -295,72 +415,39 @@ def _draw_answer_debug(answer_area, group_cache, results, gw):
                 bx, by, br = int(bc[0]), int(bc[1]), int(bc[2])
                 is_filled  = scores[ci] >= thr
 
-                if status == "MULTIPLE" and is_filled:
-                    color, thick = COLOR_MULTI,  2
+                if note and is_filled:
+                    color, thick = COLOR_MULTI, 2
                 elif status == "OK" and is_filled:
                     color, thick = COLOR_FILLED, 2
                 elif status == "EMPTY":
-                    color, thick = COLOR_EMPTY,  1
+                    color, thick = COLOR_EMPTY, 1
                 else:
                     color, thick = COLOR_NORMAL, 1
 
                 cv2.circle(dbg, (gx + bx, by), br + 2, color, thick)
 
             lx, ly = gx + 4, int(ry)
-            if status == "EMPTY":
+            if status == "EMPTY" and note:
+                cv2.putText(dbg, f"Q{q}:WRONG({note.split(':')[1][:7]})", (lx, ly - 14),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.28, COLOR_MULTI, 1)
+            elif status == "EMPTY":
                 cv2.putText(dbg, f"Q{q}:EMPTY", (lx, ly - 14),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.28, COLOR_EMPTY, 1)
-            elif status == "MULTIPLE":
-                opts = "&".join(OPTIONS[i] for i in filled)
-                cv2.putText(dbg, f"Q{q}:{opts}", (lx, ly - 14),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.28, COLOR_MULTI, 1)
 
-    # cv2.imshow("Answer Debug", dbg)
-
-
-
-def extract_dob_area(image, center_area, debug=False):
-    h_img, w_img = image.shape[:2]
-    h_c, w_c = center_area.shape[:2]
-
-    cx, cy = _locate_region(image, center_area)
-
-    left_shift  = -20   # move left (-) or right (+)
-    right_shift = 45    # expand right
-    x1 = cx + left_shift
-    x2 = cx + w_c + right_shift
-
-    y1 = cy + int(1.45 * h_c)
-    y2 = y1 + int(0.98 * h_c)
-
-    x1 = _clamp(x1, 0, w_img)
-    x2 = _clamp(x2, 0, w_img)
-    y1 = _clamp(y1, 0, h_img)
-    y2 = _clamp(y2, 0, h_img)
-
-    dob_area = image[y1:y2, x1:x2]
-
-    if debug:
-        dbg = image.copy()
-        cv2.rectangle(dbg, (x1, y1), (x2, y2), (255, 0, 255), 2)
-        # cv2.imshow("DOB Area", dbg)
-        # cv2.imshow("DOB Crop", dob_area)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-    return dob_area
+    cv2.imshow("Answer Debug", dbg)
 
 
 def process_sheet(path, debug=False):
-    debug = False
     image = cv2.imread(path)
     if image is None:
         raise FileNotFoundError(f"Cannot read '{path}'")
 
     img = auto_straighten(auto_straighten(image))
 
+    level = detect_level(img, debug=debug)
+
     name_area = extract_name_area(img, debug=debug)
-    name = detect_letters(name_area, num_cols=20) if name_area is not None else ""
+    name      = detect_letters(name_area, num_cols=20) if name_area is not None else ""
 
     centre = ""
     if name_area is not None:
@@ -368,21 +455,28 @@ def process_sheet(path, debug=False):
         if centre_area is not None:
             centre = detect_center_digits(centre_area, num_cols=5)
 
-    answer_area = extract_answer_area(img, debug=debug)
+    dob_raw = detect_dob(img, debug=debug)
+    dob     = format_dob(dob_raw)
+
+    answer_area        = extract_answer_area(img, debug=debug)
     answers, threshold = detect_all_answers(answer_area, debug=debug)
-    
-    dob = extract_dob_area(img, centre_area, debug=True)
-    
+
     issues = {
         "empty": [q for q, v in answers.items() if v["status"] == "EMPTY"],
-        "multiple": {q: v["answer"] for q, v in answers.items() if v["status"] == "MULTIPLE"},
+        "multiple": {
+            q: v["answer"] for q, v in answers.items() if v["status"] == "MULTIPLE"
+        },
     }
 
     return {
-        "name": name.strip(),
+        "name":          name.strip(),
         "centre_number": centre,
-        "answers": {q: v["answer"] for q, v in answers.items() if v["status"] == "OK"},
-        "raw": answers,
+        "level":         level or "Unknown",
+        "dob":           dob,
+        "answers":       {q: v["answer"] for q, v in answers.items() if v["status"] == "OK"},
+        "threshold":     threshold,
+        "issues":        issues,
+        "raw":           answers,
     }
 
 
@@ -400,17 +494,17 @@ def process_omr_file(file_path):
             if status == "OK":
                 formatted_answers[str(q)] = answer
             elif status == "MULTIPLE":
-                formatted_answers[str(q)] = "&".join(answer)
+                formatted_answers[str(q)] = f"{'&'.join(answer)}"
             elif status == "EMPTY":
-                formatted_answers[str(q)] = "EMPTY"
+                formatted_answers[str(q)] = "-"
             else:
                 formatted_answers[str(q)] = ""
 
         return {
             "name": result["name"],
             "centre_number": result["centre_number"],
-            "dob": None,
-            "level": None,
+            "dob": result["dob"],
+            "level": result["level"],
             "answers": formatted_answers
         }
 

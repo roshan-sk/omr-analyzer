@@ -6,12 +6,15 @@ class StudentOMR(db.Model):
     __tablename__ = "student_omr_results"
 
     id = db.Column(db.Integer, primary_key=True)
+    file_name = db.Column(db.String(255))
     name = db.Column(db.String(100))
     level = db.Column(db.String(20))
     centre_number = db.Column(db.String(20))
     dob = db.Column(db.String(20))
-    answers = db.Column(db.JSON)
     score = db.Column(db.Integer)
+    answers = db.Column(db.JSON)
+    verify_ans = db.Column(db.JSON)
+    batch_id = db.Column(db.String(50))
 
 
 class AnswerKey(db.Model):

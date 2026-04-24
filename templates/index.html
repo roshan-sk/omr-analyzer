@@ -1,167 +1,521 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>OMR Upload</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>OMR Scanner</title>
+
     <style>
+        :root {
+            --bg1: #0f172a;
+            --bg2: #1d4ed8;
+            --card: rgba(255, 255, 255, .08);
+            --line: rgba(255, 255, 255, .12);
+            --text: #e5e7eb;
+        }
+
         body {
-            font-family: Arial;
-            background: #f4f6f8;
             margin: 0;
+            font-family: Arial;
+            background: linear-gradient(135deg, var(--bg1), var(--bg2));
+            color: var(--text);
+        }
+
+        .header {
+            padding: 24px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 800;
         }
 
         .container {
-            width: 700px;
-            margin: 40px auto;
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: min(96%, 1600px);
+            margin: auto;
         }
 
-        h2 {
-            text-align: center;
-        }
-
-        .upload-box {
-            text-align: center;
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            padding: 20px;
+            border-radius: 20px;
             margin-bottom: 20px;
         }
 
-        button {
-            background: #007bff;
-            color: white;
+        .upload-box {
+            padding: 25px;
+            background: rgba(0, 0, 0, .35);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .file {
+            padding: 10px;
+            background: #ffffff14;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 999px;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            background: linear-gradient(90deg, #06b6d4, #3b82f6);
+            color: white;
             cursor: pointer;
+            font-weight: bold;
         }
 
-        button:hover {
-            background: #0056b3;
-        }
-
-        .result-card {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fafafa;
-            border-radius: 8px;
-        }
-
-        .info {
+        .submit-btn {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .answers {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 8px;
-        }
-
-        .ans-box {
-            padding: 8px;
-            text-align: center;
-            border-radius: 5px;
-            background: #e9ecef;
-            font-size: 14px;
-        }
-
-        .empty {
-            background: #ffe5e5;
-        }
-
-        .multiple {
-            background: #fff3cd;
-        }
-
-        .correct {
-            background: #d4edda;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
+            justify-content: center;
             margin-top: 10px;
         }
+
+        #progressBox {
+            display: none;
+        }
+
+        #progressTrack {
+            background: #1e293b;
+            border-radius: 10px;
+            height: 22px;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #06b6d4, #22c55e);
+            text-align: center;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .table-container {
+            max-height: 70vh;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+            text-align: center;
+        }
+
+        th {
+            background: #0b1220;
+        }
+
+        .slno {
+            background: #000;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .modal-panel {
+            width: 92%;
+            max-width: 980px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #0f172a;
+            border: 1px solid rgba(255,255,255,.12);
+            padding: 24px;
+            border-radius: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,.08);
+            border: none;
+            color: #e2e8f0;
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .modal-close:hover { background: rgba(255,255,255,.16); }
+
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,.06);
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 3px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .leg {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .leg-bar {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .pill-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 7px;
+        }
+
+        .pill {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,.05);
+            border-radius: 10px;
+            padding: 8px 4px;
+            border-left: 3px solid transparent;
+            min-width: 0;
+        }
+
+        .pill .qnum {
+            font-size: 10px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .pill .val {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .pill.correct  { border-left-color: #22c55e; }
+        .pill.correct .val  { color: #4ade80; }
+
+        .pill.wrong    { border-left-color: #ef4444; }
+        .pill.wrong .val    { color: #f87171; }
+
+        .pill.empty    { border-left-color: #475569; }
+        .pill.empty .val    { color: #64748b; }
+
+        .pill.multiple { border-left-color: #f59e0b; }
+        .pill.multiple .val { color: #fbbf24; }
     </style>
 </head>
+
 <body>
 
-<div class="container">
+    <div class="header">OMR DETECT & EXTRACT</div>
 
-    <h2>📄 OMR Processing</h2>
+    <div class="container">
 
-    <div class="upload-box">
-        <form id="uploadForm">
-            <input type="file" id="fileInput" required>
-            <br><br>
-            <button type="submit">Upload</button>
-        </form>
-        <div class="loading" id="loading">Processing...</div>
+        <div class="card">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-box">
+                    <input type="file" name="files" multiple class="file">
+                    <p>Upload images or ZIP</p>
+                </div>
+
+                <div class="submit-btn">
+                    <button id="submitBtn" class="btn">Submit</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="progressBox">
+            <div id="progressTrack">
+                <div id="progressBar">0%</div>
+            </div>
+            <p id="progressText">Starting...</p>
+        </div>
+
+        <div id="resultsSection" class="card" style="display:none;">
+
+            <div class="table-header">
+                <h2>Results</h2>
+                <button class="btn" onclick="exportExcel()">Download Excel</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SL No</th>
+                            <th>Name</th>
+                            <th>Centre Number</th>
+                            <th>Level</th>
+                            <th>DOB</th>
+                            <th>Correct</th>
+                            <th>Wrong</th>
+                            <th>Percentage %</th>
+                            <th>View</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+
     </div>
 
-    <div id="result"></div>
+    <div id="answerModal" class="modal">
+        <div class="modal-panel">
 
-</div>
-
-<script>
-document.getElementById("uploadForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-
-    const fileInput = document.getElementById("fileInput");
-    const loading = document.getElementById("loading");
-    const resultDiv = document.getElementById("result");
-
-    loading.style.display = "block";
-    resultDiv.innerHTML = "";
-
-    const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
-
-    const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-    });
-
-    const data = await response.json();
-    loading.style.display = "none";
-
-    renderResult(data);
-});
-
-function renderResult(data) {
-    let html = `
-        <div class="result-card">
-            <div class="info">
-                <div><strong>Name:</strong> ${data.name}</div>
-                <div><strong>Centre:</strong> ${data.centre_number}</div>
-            </div>
-            <div class="info">
-                <div><strong>Level:</strong> ${data.level}</div>
-                <div><strong>Score:</strong> ${data.score}</div>
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="studentName">—</div>
+                    <div class="modal-subtitle" id="studentMeta">—</div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">×</button>
             </div>
 
-            <h3>Answers</h3>
-            <div class="answers">
-    `;
+            <div class="summary-bar" id="summaryBar"></div>
 
-    for (let i = 1; i <= 40; i++) {
-        let ans = data.answers[i] || "";
+            <div class="legend">
+                <div class="leg"><div class="leg-bar" style="background:#22c55e"></div> Correct</div>
+                <div class="leg"><div class="leg-bar" style="background:#ef4444"></div> Wrong</div>
+                <div class="leg"><div class="leg-bar" style="background:#f59e0b"></div> Multiple</div>
+                <div class="leg"><div class="leg-bar" style="background:#475569"></div> Empty</div>
+            </div>
 
-        let cls = "ans-box";
-        if (!ans) cls += " empty";
-        else if (ans.includes("&")) cls += " multiple";
-        else cls += " correct";
+            <div class="pill-grid" id="answerGrid"></div>
 
-        html += `<div class="${cls}">Q${i}<br>${ans || "-"}</div>`;
-    }
+        </div>
+    </div>
 
-    html += `</div></div>`;
+    <script>
 
-    document.getElementById("result").innerHTML = html;
-}
-</script>
+        let batchId = "";
+        let offset = 0;
+        let rowCount = 0;
+        let allResults = {};
+
+        document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true;
+
+            offset = 0;
+            rowCount = 0;
+            allResults = {};
+
+            document.getElementById("resultsBody").innerHTML = "";
+            document.getElementById("answerGrid").innerHTML = "";
+            document.getElementById("studentName").innerText = "";
+            document.getElementById("studentMeta").innerText = "";
+
+            const res = await fetch("/api/start", { method: "POST" });
+            const data = await res.json();
+            batchId = data.batch_id;
+
+            document.getElementById("progressBox").style.display = "block";
+            document.getElementById("resultsSection").style.display = "block";
+
+            const formData = new FormData(this);
+            formData.append("batch_id", batchId);
+
+            fetch("/api/upload", { method: "POST", body: formData })
+            .then(() => {
+                document.querySelector(".file").value = "";
+            });
+
+            poll();
+
+            btn.disabled = false;
+        });
+
+        function poll() {
+            const interval = setInterval(async () => {
+                const res = await fetch(`/api/results/${batchId}?offset=${offset}`);
+                const data = await res.json();
+
+                updateProgress(data);
+                appendRows(data.results || []);
+                offset = data.offset || offset;
+
+                if (data.status === "Completed") {
+                    clearInterval(interval);
+                    document.getElementById("progressBox").style.display = "none";
+                }
+            }, 1200);
+        }
+
+        function updateProgress(data) {
+            let percent = data.percent || 0;
+            document.getElementById("progressBar").style.width = percent + "%";
+            document.getElementById("progressBar").innerText = percent + "%";
+            document.getElementById("progressText").innerText = data.status;
+        }
+
+        function appendRows(results) {
+            const tbody = document.getElementById("resultsBody");
+
+            results.forEach(r => {
+                rowCount++;
+
+                allResults[r.key] = r;
+
+                tbody.innerHTML += `
+                    <tr>
+                    <td class="slno">${rowCount}</td>
+                    <td>${r.name || "-"}</td>
+                    <td>${r.centre_number || "-"}</td>
+                    <td>${r.level || "-"}</td>
+                    <td>${r.dob || "-"}</td>
+                    <td style="color:#22c55e">${r.correct}</td>
+                    <td style="color:#ef4444">${r.wrong}</td>
+                    <td>${r.percentage}%</td>
+                    <td><button class="btn" onclick="view('${r.key}')">View</button></td>
+                    </tr>`;
+            });
+        }
+
+        function view(key) {
+            const data = allResults[key];
+
+            document.getElementById("studentName").innerText = data.name || "—";
+            document.getElementById("studentMeta").innerText =
+                [data.centre_number, data.level, data.dob].filter(Boolean).join("  ·  ");
+
+            const total = data.answers ? data.answers.length : 0;
+            const correct = data.correct  || 0;
+            const wrong = data.wrong    || 0;
+            const empty = data.answers  ? data.answers.filter(a => a.value === "Empty").length : 0;
+            const multi = data.answers  ? data.answers.filter(a => a.value && a.value.includes("Multiple")).length : 0;
+
+            document.getElementById("summaryBar").innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#4ade80">${correct}</div>
+                    <div class="stat-lbl">Correct</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#f87171">${wrong}</div>
+                    <div class="stat-lbl">Wrong</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#fbbf24">${multi}</div>
+                    <div class="stat-lbl">Multiple</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#94a3b8">${empty}</div>
+                    <div class="stat-lbl">Empty</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#38bdf8">${data.percentage}%</div>
+                    <div class="stat-lbl">Score</div>
+                </div>`;
+
+            let html = "";
+
+            (data.answers || []).forEach((a, i) => {
+                let cls = "pill";
+
+                if (a.value === "Empty") cls += " empty";
+                else if (a.value && a.value.includes("Multiple")) cls += " multiple";
+                else if (a.is_correct) cls += " correct";
+                else cls += " wrong";
+
+                const display = (a.value === "Empty" || !a.value) ? "—" : a.value;
+
+                html += `<div class="${cls}">
+                    <span class="qnum">Q${String(i + 1).padStart(2, "0")}</span>
+                    <span class="val">${display}</span>
+                </div>`;
+            });
+
+            document.getElementById("answerGrid").innerHTML = html;
+            document.getElementById("answerModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("answerModal").style.display = "none";
+        }
+
+        function exportExcel() {
+            window.location.href = "/api/export_latest";
+        }
+
+        document.getElementById("answerModal").addEventListener("click", function(e) {
+            if (e.target.id === "answerModal") {
+                closeModal();
+            }
+        });
+
+    </script>
 
 </body>
+
 </html>
