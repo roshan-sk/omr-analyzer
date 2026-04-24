@@ -405,5 +405,50 @@ def export_excel():
     )
 
 
+@app.route("/api/save_answer_key", methods=["POST"])
+def save_answer_key():
+
+    data = request.json
+    level = data.get("level", "").strip().lower()
+    answers = data.get("answers", {})
+
+    if not level:
+        return jsonify({"error": "Level required"}), 400
+
+    for q, ans in answers.items():
+
+        q_no = int(q.replace("Q", ""))
+
+        existing = AnswerKey.query.filter_by(
+            level=level,
+            question_number=q_no
+        ).first()
+
+        if existing:
+            existing.correct_answer = ans
+        else:
+            db.session.add(AnswerKey(
+                level=level,
+                question_number=q_no,
+                correct_answer=ans
+            ))
+
+    db.session.commit()
+
+    return jsonify({"message": "Answer key saved successfully"})
+
+
+@app.route("/api/get_answer_key/<level>")
+def get_answer_key(level):
+
+    keys = AnswerKey.query.filter_by(level=level).all()
+
+    data = {
+        f"Q{str(k.question_number).zfill(2)}": k.correct_answer
+        for k in keys
+    }
+
+    return jsonify(data)
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -271,12 +271,105 @@
 
         .pill.multiple { border-left-color: #f59e0b; }
         .pill.multiple .val { color: #fbbf24; }
+
+        .key-level-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .key-level-tab {
+            padding: 6px 18px;
+            border-radius: 999px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .key-level-tab.active {
+            background: rgba(59,130,246,0.18);
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+
+        .key-summary-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .key-pill {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,.05);
+            border-radius: 10px;
+            padding: 8px 4px 7px;
+            border-left: 3px solid #334155;
+            min-width: 0;
+        }
+
+        .key-pill.is-set { border-left-color: #22c55e; }
+
+        .key-pill .qnum {
+            font-size: 10px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .key-opts {
+            display: flex;
+            flex-direction: row;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: nowrap;
+        }
+
+        .key-opt {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            background: transparent;
+            font-size: 10px;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .key-opt:hover { background: #1e293b; }
+
+        .key-opt.sel-A { background: #172554; border-color: #3b82f6; color: #93c5fd; }
+        .key-opt.sel-B { background: #14532d; border-color: #22c55e; color: #86efac; }
+        .key-opt.sel-C { background: #451a03; border-color: #f59e0b; color: #fcd34d; }
+        .key-opt.sel-D { background: #4a044e; border-color: #d946ef; color: #f0abfc; }
+        .key-opt.sel-E { background: #1e1b4b; border-color: #8b5cf6; color: #c4b5fd; }
+
+        .key-footer {
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid #1e293b;
+            padding-top: 14px;
+            margin-top: 4px;
+        }
     </style>
 </head>
 
 <body>
 
     <div class="header">OMR DETECT & EXTRACT</div>
+
+    <div style="display:flex;justify-content:flex-end;padding:10px 20px;">
+        <button class="btn" onclick="openKeyModal()">Answer Key</button>
+    </div>
 
     <div class="container">
 
@@ -355,8 +448,66 @@
         </div>
     </div>
 
-    <script>
+    <div id="keyModal" class="modal">
+        <div class="modal-panel">
 
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Answer Key</div>
+                    <div class="modal-subtitle" id="keyLevelLabel">Level: Intermediate</div>
+                </div>
+                <button class="modal-close" onclick="closeKeyModal()">×</button>
+            </div>
+
+            <div class="key-level-tabs">
+                <button class="key-level-tab active" data-level="lower_primary"
+                    onclick="switchKeyLevel('lower primary', this)">Lower Primary</button>
+                <button class="key-level-tab" data-level="upper_primary"
+                    onclick="switchKeyLevel('upper primary', this)">Upper Primary</button>
+                <button class="key-level-tab" data-level="junior"
+                    onclick="switchKeyLevel('junior', this)">Junior</button>
+                <button class="key-level-tab" data-level="intermediate"
+                    onclick="switchKeyLevel('intermediate', this)">Intermediate</button>
+                <button class="key-level-tab" data-level="senior"
+                    onclick="switchKeyLevel('senior', this)">Senior</button>
+                <button class="key-level-tab" data-level="open"
+                    onclick="switchKeyLevel('open', this)">Open</button>
+            </div>
+
+            <div class="key-summary-bar">
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#38bdf8" id="kTotal">40</div>
+                    <div class="stat-lbl">Total Questions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#4ade80" id="kSet">0</div>
+                    <div class="stat-lbl">Set</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#94a3b8" id="kEmpty">40</div>
+                    <div class="stat-lbl">Empty</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="leg"><div class="leg-bar" style="background:#3b82f6"></div> A</div>
+                <div class="leg"><div class="leg-bar" style="background:#22c55e"></div> B</div>
+                <div class="leg"><div class="leg-bar" style="background:#f59e0b"></div> C</div>
+                <div class="leg"><div class="leg-bar" style="background:#d946ef"></div> D</div>
+                <div class="leg"><div class="leg-bar" style="background:#8b5cf6"></div> E</div>
+                <div class="leg"><div class="leg-bar" style="background:#334155"></div> Empty</div>
+            </div>
+
+            <div class="pill-grid" id="keyGrid"></div>
+
+            <div class="key-footer">
+                <button class="btn" onclick="saveAnswerKey()">Save Key</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
         let batchId = "";
         let offset = 0;
         let rowCount = 0;
@@ -509,10 +660,104 @@
         }
 
         document.getElementById("answerModal").addEventListener("click", function(e) {
-            if (e.target.id === "answerModal") {
-                closeModal();
-            }
+            if (e.target.id === "answerModal") closeModal();
         });
+
+        let keyData = {};
+        let currentKeyLevel = "intermediate";
+
+        async function openKeyModal() {
+            document.getElementById("keyModal").style.display = "flex";
+            currentKeyLevel = "intermediate";
+
+            document.querySelectorAll(".key-level-tab").forEach(t =>
+                t.classList.toggle("active", t.dataset.level === "intermediate")
+            );
+            document.getElementById("keyLevelLabel").innerText = "Level: Intermediate";
+
+            await loadKeyForLevel("intermediate");
+        }
+
+        function closeKeyModal() {
+            document.getElementById("keyModal").style.display = "none";
+        }
+
+        document.getElementById("keyModal").addEventListener("click", function(e) {
+            if (e.target.id === "keyModal") closeKeyModal();
+        });
+
+        async function switchKeyLevel(level, btn) {
+            currentKeyLevel = level;
+            document.querySelectorAll(".key-level-tab").forEach(t => t.classList.remove("active"));
+            btn.classList.add("active");
+            document.getElementById("keyLevelLabel").innerText =
+                "Level: " + level.charAt(0).toUpperCase() + level.slice(1);
+            await loadKeyForLevel(level);
+        }
+
+        async function loadKeyForLevel(level) {
+            try {
+                const res = await fetch(`/api/get_answer_key/${level}`);
+                keyData = await res.json();
+            } catch (err) {
+                keyData = {};
+            }
+            buildKeyGrid();
+        }
+
+        function buildKeyGrid() {
+            const grid = document.getElementById("keyGrid");
+            grid.innerHTML = "";
+
+            for (let i = 1; i <= 40; i++) {
+                const q = `Q${String(i).padStart(2, "0")}`;
+                const cur = keyData[q] || "";
+                const isSet = !!cur;
+
+                const pill = document.createElement("div");
+                pill.className = "key-pill" + (isSet ? " is-set" : "");
+
+                const opts = ["A", "B", "C", "D", "E"].map(opt => {
+                    const active = cur === opt ? ` sel-${opt}` : "";
+                    return `<button class="key-opt${active}"
+                        onclick="setKey('${q}','${opt}',this)">${opt}</button>`;
+                }).join("");
+
+                pill.innerHTML = `
+                    <span class="qnum">${q}</span>
+                    <div class="key-opts">${opts}</div>`;
+
+                grid.appendChild(pill);
+            }
+
+            updateKeyStats();
+        }
+
+        function setKey(q, val, btn) {
+            if (keyData[q] === val) {
+                delete keyData[q];
+            } else {
+                keyData[q] = val;
+            }
+            buildKeyGrid();
+        }
+
+        function updateKeyStats() {
+            const vals = Object.values(keyData);
+            document.getElementById("kSet").textContent   = vals.length;
+            document.getElementById("kEmpty").textContent = 40 - vals.length;
+        }
+
+        async function saveAnswerKey() {
+            const res = await fetch("/api/save_answer_key", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ level: currentKeyLevel, answers: keyData })
+            });
+            const data = await res.json();
+            alert(data.message || "Saved");
+            closeKeyModal();
+        }
 
     </script>
 
