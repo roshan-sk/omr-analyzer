@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Flask
+instance/
+uploads/
+
+# Node
+node_modules/
+dist/
+
+# Angular
+.angular/
+.cache/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
