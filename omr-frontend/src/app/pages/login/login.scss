@@ -1,0 +1,191 @@
+$accent: #2563eb;
+$accent-hover: #1d4ed8;
+$accent-btn: #648ce4;
+$red: #dc2626;
+$red-lt: #fef2f2;
+$red-border: #fecaca;
+$red-input: #fca5a5;
+
+$bg: #f5f6fa;
+$surface: #ffffff;
+$border: #d1d5db;
+$text-1: #111827;
+$text-2: #6b7280;
+
+$rad: 8px;
+$ease: cubic-bezier(.4, 0, .2, 1);
+
+.login-page {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: $bg;
+}
+
+.login-card {
+  width: 400px;
+  background: $surface;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.login-card .title {
+  text-align: center;
+  margin-bottom: 10px;
+  color: $accent;
+}
+
+.login-card .subtitle {
+  text-align: center;
+  margin-bottom: 30px;
+  color: $text-2;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: $red-lt;
+  border: 1px solid $red-border;
+  color: $red;
+  padding: 12px 14px;
+  border-radius: $rad;
+  font-size: 14px;
+  margin-bottom: 20px;
+  animation: slideDown 0.2s ease;
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid $border;
+    border-radius: $rad;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: $accent;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    &.input-error {
+      border-color: $red-input;
+    }
+  }
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .input-icon {
+    position: absolute;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+
+    img {
+      width: 18px;
+      height: 20px;
+    }
+  }
+
+  input {
+    padding-left: 38px;
+    padding-right: 38px;
+  }
+
+  .eye-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    img {
+      width: 16px;
+      height: 16px;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+    }
+
+    &:hover img {
+      opacity: 0.8;
+    }
+  }
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: $accent-btn;
+  color: $surface;
+  border: none;
+  border-radius: $rad;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) {
+    background: $accent-hover;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: $surface;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

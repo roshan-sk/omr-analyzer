@@ -1,0 +1,252 @@
+<app-sidebar></app-sidebar>
+
+<div class="main-wrapper" [class.sidebar-closed]="!isSidebarOpen">
+  <app-header></app-header>
+
+  <div class="page-content">
+    <div class="page-header">
+      <div class="page-icon">
+        <img src="assets/images/analyze.png" alt="users-icon" />
+      </div>
+
+      <div>
+        <h1>Upload OMR Sheets</h1>
+        <p>Upload and process student answer sheets</p>
+      </div>
+    </div>
+
+    <div class="banner banner-error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <div class="upload-zone" [class.drag-over]="isDragging" [class.disabled]="isProcessing"
+      (click)="!isProcessing && fileInput.click()" (dragover)="!isProcessing && onDragOver($event)"
+      (dragleave)="onDragLeave($event)" (drop)="!isProcessing && onDrop($event)">
+      <input type="file" accept=".jpg,.png,.zip" #fileInput hidden multiple [disabled]="isProcessing"
+        (change)="onFileSelected($event); fileInput.value = ''">
+
+      <div class="uz-content">
+        <img src="/assets/images/upload-icon.png" alt="Upload" class="upload-icon" />
+        <p class="uz-title">
+          Drop OMR sheets here, or <span class="uz-link">browse files</span>
+        </p>
+        <p class="uz-hint">JPG · PNG · ZIP</p>
+      </div>
+
+      <div class="uz-files" *ngIf="selectedFiles.length" (click)="$event.stopPropagation()">
+        <div class="uz-files-inner">
+          <div class="uz-files-list">
+            <div class="uz-file-chip" *ngFor="let file of selectedFiles; let i = index">
+              <span>{{ file.name.length > 24 ? file.name.slice(0, 22) + '…' : file.name }}</span>
+              <span class="file-size">{{ (file.size / 1024).toFixed(0) }} KB</span>
+              <button class="chip-remove" (click)="removeFile(i)" type="button" [disabled]="isProcessing">✕</button>
+            </div>
+          </div>
+
+          <div class="uz-actions">
+            <button class="btn-outline btn-sm" (click)="selectedFiles = []" type="button" [disabled]="isProcessing">
+              Clear
+            </button>
+            <button class="btn-primary btn-sm" (click)="processFiles()" type="button" [disabled]="isProcessing">
+              <span *ngIf="!isProcessing">Process</span>
+              <span *ngIf="isProcessing" class="spinner-wrap">
+                <span class="spinner"></span> Processing…
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <br>
+
+    <div class="progress-box" *ngIf="isProcessing">
+      <div class="prog-header">
+        <div class="prog-status">
+          <span class="pulse-dot"></span>
+          {{ progressText }}
+        </div>
+        <span class="prog-pct">{{ progressPct }}%</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" [style.width.%]="progressPct"></div>
+      </div>
+      <div class="prog-live">{{ liveCount }} result(s) so far</div>
+    </div>
+
+    <div class="banner banner-success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <div class="stats-row" *ngIf="statTotal > 0">
+      <div class="stat-card">
+        <div class="stat-icon-wrap" data-color="blue">
+          <img src="assets/images/complete.png" alt="Total">
+        </div>
+        <div class="stat-body">
+          <p>Total Processed</p>
+          <b>{{ statTotal }}</b>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap" data-color="green">
+          <img src="assets/images/review.png" alt="Total">
+        </div>
+        <div class="stat-body">
+          <p>Average Score</p>
+          <b>{{ statAvg }}</b>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrap" data-color="amber">
+          <img src="assets/images/badge.png" alt="Total">
+        </div>
+        <div class="stat-body">
+          <p>Highest Score</p>
+          <b>{{ statHigh }}</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-card" *ngIf="resultRows.length > 0">
+      <div class="results-header">
+        <div class="rh-left">
+          <h2>Results</h2>
+          <div class="live-badge" [class.active]="isProcessing">
+            <span class="live-dot"></span> Live
+          </div>
+        </div>
+        <div class="rh-right">
+          <div class="search-wrap">
+            <img src="assets/images/search.png" alt="Search" class="search-icon">
+            <input class="search-input" placeholder="Search student, centre…" [value]="searchQuery"
+              (input)="onSearch($any($event.target).value)">
+          </div>
+          <button class="btn-outline btn-sm" (click)="onExport()">
+            <img src="assets/images/export.png" alt="export" class="export-icon">
+            Export
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="th-sl">#</th>
+              <th class="th-name">Student Name</th>
+              <th class="th-centre">Centre Number</th>
+              <th class="th-level">Level</th>
+              <th class="th-dob">Date of Birth</th>
+              <th class="th-score">Score %</th>
+              <th class="th-action">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngIf="filteredRows.length > 0; else noRows">
+              <tr *ngFor="let r of pagedRows">
+                <td class="td-sl">{{ rowIndex(r) }}</td>
+                <td class="td-name">{{ r.name || '—' }}</td>
+                <td class="td-centre">{{ r.centre_number || '—' }}</td>
+                <td>
+                  <span [class]="levelClass(normalizedLevel(r))">
+                    {{ levelLabel(normalizedLevel(r)) }}
+                  </span>
+                </td>
+                <td class="td-dob">{{ r.dob || '—' }}</td>
+                <td>
+                  <span class="score-num" [class]="scoreClass(r.percentage)">
+                    {{ r.percentage }}%
+                  </span>
+                </td>
+                <td>
+                  <button class="view-btn" (click)="viewResult(r.key)">
+                    View
+                  </button>
+                </td>
+              </tr>
+            </ng-container>
+            <ng-template #noRows>
+              <tr>
+                <td colspan="7">
+                  <div class="table-empty">
+                    <img src="assets/images/search.png" alt="Search" class="no-search-icon">
+                    <p>No results match your search</p>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination [pageIndex]="pageIndex" [totalPages]="totalPages" [pageSize]="pageSize" [rangeLabel]="rangeLabel"
+        (pageIndexChange)="pageIndex = $event" (pageSizeChange)="onPageSizeChange($event)">
+      </app-pagination>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-backdrop" [class.open]="modalOpen" (click)="closeModal()">
+  <div class="student-modal" (click)="$event.stopPropagation()" *ngIf="modalStudent">
+
+    <div class="sm-header">
+      <div class="sm-header-left">
+        <div class="sm-avatar">{{ nameInitial(modalStudent.name) }}</div>
+        <div>
+          <div class="sm-name">{{ modalStudent.name || '—' }}</div>
+          <div class="sm-meta">{{ modalMetaLine() }}</div>
+        </div>
+      </div>
+      <div class="sm-score-badge">
+        <div class="pct" [style.color]="modalPctColor()">{{ modalStudent.percentage }}%</div>
+        <div class="pct-label">Score</div>
+      </div>
+      <button class="close-btn" (click)="closeModal()">
+        <img src="assets/images/close.png" alt="Close" class="close-icon">
+      </button>
+    </div>
+
+    <div class="sm-stats">
+      <div class="sm-stat">
+        <div class="sn" style="color:var(--green)">{{ modalCorrect() }}</div>
+        <div class="sl">Correct</div>
+      </div>
+      <div class="sm-stat">
+        <div class="sn" style="color:var(--red)">{{ modalWrong() }}</div>
+        <div class="sl">Wrong</div>
+      </div>
+      <div class="sm-stat">
+        <div class="sn" style="color:#94a3b8">{{ modalEmpty() }}</div>
+        <div class="sl">Empty</div>
+      </div>
+    </div>
+
+    <div class="sm-legend">
+      <div class="al-item">
+        <div class="al-dot correct"></div> Correct
+      </div>
+      <div class="al-item">
+        <div class="al-dot wrong"></div> Wrong
+      </div>
+      <div class="al-item">
+        <div class="al-dot multi"></div> Multiple marks
+      </div>
+      <div class="al-item">
+        <div class="al-dot empty"></div> Unanswered
+      </div>
+    </div>
+
+    <div class="sm-pill-grid">
+      <div *ngFor="let a of modalAnswers(); let i = index" [class]="pillClass(a)">
+        <span class="qn">Q{{ (i + 1).toString().padStart(2, '0') }}</span>
+        <span class="qv">{{ pillDisplay(a) }}</span>
+      </div>
+    </div>
+
+  </div>
+</div>

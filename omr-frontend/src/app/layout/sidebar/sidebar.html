@@ -1,0 +1,47 @@
+<div class="sidebar" [class.closed]="!isVisuallyOpen" [class.hover-peek]="isHoverOpen && !isSidebarOpen"
+  (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">
+
+  <div class="sidebar-header">
+    <span class="brand-name">
+      {{ isVisuallyOpen ? 'OMR Analyzer' : 'OMR' }}
+    </span>
+    <button class="toggle-btn" *ngIf="isSidebarOpen" (click)="toggleSidebar()" title="close"><img src="assets/images/close.png" alt="Close" class="close-icon"></button>
+  </div>
+
+  <nav class="nav-list">
+    <a class="nav-item" routerLink="/analyzer" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <img src="assets/images/file.png" alt="" class="menu-icon" />
+      <span class="nav-label">Analyzer</span>
+    </a>
+
+    <a class="nav-item" routerLink="/answer-key" routerLinkActive="active">
+      <img src="assets/images/ans-key.png" alt="" class="menu-icon" />
+      <span class="nav-label">Answer Key</span>
+    </a>
+
+    <a class="nav-item" *ngIf="role === 'ADMIN'" routerLink="/users" routerLinkActive="active">
+      <img src="assets/images/user.png" alt="" class="menu-icon" />
+      <span class="nav-label">Users</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+
+    <button class="logout-icon-btn" *ngIf="!isVisuallyOpen" (click)="logout()" title="Logout">
+      <img src="assets/images/exit.png" alt="logout" />
+    </button>
+
+    <div class="profile-card" *ngIf="isVisuallyOpen">
+      <div class="profile-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+      <div class="profile-info">
+        <h4>{{ username }}</h4>
+        <p>{{ role }}</p>
+      </div>
+      <button class="logout-icon-btn" (click)="logout()" title="Logout">
+        <img src="assets/images/exit.png" alt="logout" />
+      </button>
+    </div>
+
+  </div>
+
+</div>

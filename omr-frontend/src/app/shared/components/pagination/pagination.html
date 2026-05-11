@@ -1,0 +1,45 @@
+<div class="pg-footer">
+
+    <div class="pg-perpage">
+
+        Rows
+
+        <select [value]="pageSize" (change)="changePageSize($event)">
+            <option [value]="5">5</option>
+
+            <option [value]="10">10</option>
+
+            <option [value]="20">20</option>
+        </select>
+
+    </div>
+
+    <div class="pg-sep"></div>
+
+    <span class="pg-info">
+
+        {{ rangeLabel }}
+
+    </span>
+
+    <div class="pg-arrows">
+
+        <button class="pg-arr" (click)="prevPage()" [disabled]="pageIndex === 0" aria-label="Previous page">
+            &#8249;
+        </button>
+
+        <span class="pg-counter">
+
+            {{ pageIndex + 1 }}
+            /
+            {{ totalPages }}
+
+        </span>
+
+        <button class="pg-arr" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1" aria-label="Next page">
+            &#8250;
+        </button>
+
+    </div>
+
+</div>

@@ -1,0 +1,41 @@
+:root {
+  --bg-color: #f5f6fa;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+  --primary-color: rgb(93, 135, 255);
+  --sidebar-border-color: #e5e7eb;
+  --border-color: #ffffff;
+  --text-color: #111827;
+  --hover-color: #f3f4f6;
+}
+
+.sidebar {
+  width: 240px;
+}
+
+.sidebar.closed {
+  width: 72px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.btn-primary {
+  padding: 12px 20px;
+  background: rgb(93, 135, 255);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}

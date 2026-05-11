@@ -1,0 +1,231 @@
+<app-sidebar></app-sidebar>
+
+<div class="main-wrapper" [class.sidebar-closed]="!isSidebarOpen">
+  <app-header></app-header>
+
+  <div class="page-content">
+
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon">
+          <img src="assets/images/group.png" alt="users-icon" class="users-icon" />
+        </div>
+
+        <div>
+          <h1>Users Management</h1>
+          <p>Manage users, roles and permissions</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="loading-box" *ngIf="loading">Loading users...</div>
+
+    <div class="toolbar-area" *ngIf="!loading">
+      <div class="search-wrapper">
+        <img src="assets/images/search.png" alt="search" class="search-icon" />
+        <input type="text" class="search-input" placeholder="Search by name, email or role..." [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange()" />
+        <button class="search-clear" *ngIf="searchQuery" (click)="searchQuery = ''; onSearchChange()">
+          <img src="assets/images/close.png" alt="close" />
+        </button>
+      </div>
+      <button class="btn-add" (click)="openAddModal()">Add User</button>
+    </div>
+
+    <div class="table-card" *ngIf="!loading">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th class="action-cell">Sheets Scanned</th>
+              <th class="action-cell">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="filteredUsers.length === 0">
+              <td colspan="7" class="empty-row">No users found.</td>
+            </tr>
+            <tr *ngFor="let user of pagedUsers; let i = index">
+              <td>{{ pageIndex * pageSize + i + 1 }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span class="role-badge" [class.admin]="user.role === 'ADMIN'">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [class.active]="user.is_active" [class.disabled]="!user.is_active">
+                  {{ user.is_active ? 'Active' : 'Disabled' }}
+                </span>
+              </td>
+              <td class="action-cell">{{ user.scanned_sheets_count }}</td>
+              <td class="action-cell">
+                <button class="icon-btn" (click)="openEditModal(user)">
+                  <img src="assets/images/edit.png" alt="edit" class="action-btn">
+                </button>
+                <button class="icon-btn" (click)="openDeleteModal(user)">
+                  <img src="assets/images/bin.png" alt="delete" class="action-btn">
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination [pageIndex]="pageIndex" [totalPages]="totalPages" [pageSize]="pageSize" [rangeLabel]="rangeLabel"
+        (pageIndexChange)="pageIndex = $event" (pageSizeChange)="onPageSizeChange($event)">
+      </app-pagination>
+
+    </div>
+
+  </div>
+</div>
+\
+<div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-top">
+      <h2>Add User</h2>
+      <button class="close-btn" (click)="closeAddModal()">
+        <img src="assets/images/close.png" alt="close" />
+      </button>
+    </div>
+    <div class="error-box" *ngIf="addError">{{ addError }}</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" [(ngModel)]="addForm.username" placeholder="Enter username" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="addForm.email" placeholder="Enter email" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-eye">
+          <input [type]="showAddPassword ? 'text' : 'password'" [(ngModel)]="addForm.password"
+            placeholder="Enter password" />
+          <button class="eye-btn" type="button" (click)="showAddPassword = !showAddPassword">
+            <img [src]="showAddPassword ? 'assets/images/eye-off.png' : 'assets/images/eye.png'" alt="toggle" />
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select [(ngModel)]="addForm.role">
+          <option value="USER">USER</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group toggle-group">
+        <label>Status</label>
+        <div class="toggle-wrapper">
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="addForm.is_active" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="toggle-label" [class.active]="addForm.is_active">
+            {{ addForm.is_active ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" (click)="closeAddModal()">Cancel</button>
+      <button class="btn btn-save" (click)="saveNewUser()" [disabled]="addLoading">
+        {{ addLoading ? 'Adding...' : 'Add User' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-top">
+      <h2>Update User</h2>
+      <button class="close-btn" (click)="closeEditModal()">
+        <img src="assets/images/close.png" alt="close" />
+      </button>
+    </div>
+    <div class="error-box" *ngIf="editError">{{ editError }}</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" [(ngModel)]="editForm.username" placeholder="Enter username" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="editForm.email" placeholder="Enter email" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-eye">
+          <input [type]="showEditPassword ? 'text' : 'password'" [(ngModel)]="editForm.password"
+            placeholder="Leave blank to keep" />
+          <button class="eye-btn" type="button" (click)="showEditPassword = !showEditPassword">
+            <img [src]="showEditPassword ? 'assets/images/eye-off.png' : 'assets/images/eye.png'" alt="toggle" />
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select [(ngModel)]="editForm.role">
+          <option value="USER">USER</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group toggle-group">
+        <label>Status</label>
+        <div class="toggle-wrapper">
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="editForm.is_active" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="toggle-label" [class.active]="editForm.is_active">
+            {{ editForm.is_active ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" (click)="closeEditModal()">Cancel</button>
+      <button class="btn btn-save" (click)="saveUser()" [disabled]="editLoading">
+        {{ editLoading ? 'Updating...' : 'Update' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-top">
+      <h2>Delete User</h2>
+      <button class="close-btn" (click)="closeDeleteModal()">
+        <img src="assets/images/close.png" alt="close" />
+      </button>
+    </div>
+    <p class="delete-msg">
+      Are you sure you want to delete <strong>{{ deletingUser?.username }}</strong>?
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" (click)="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-delete" (click)="confirmDelete()" [disabled]="deleteLoading">
+        {{ deleteLoading ? 'Deleting...' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

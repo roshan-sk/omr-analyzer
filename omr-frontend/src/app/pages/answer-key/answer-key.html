@@ -1,0 +1,158 @@
+<app-sidebar></app-sidebar>
+
+<div class="main-wrapper" [class.sidebar-closed]="!isSidebarOpen">
+
+  <app-header></app-header>
+
+  <div class="page-content">
+
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon">
+          <img src="assets/images/faq.png" alt="" class="menu-icon" />
+        </div>
+        <div>
+          <h1>Answer Key</h1>
+          <p>Manage answer keys and scoring rules per level</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Select Level</div>
+      <div class="levels-wrapper">
+        <button
+          *ngFor="let level of levels"
+          class="level-chip"
+          [class.active]="selectedLevel === level"
+          [disabled]="loading"
+          (click)="selectLevel(level)">
+          {{ formatLevel(level) }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Scoring Rules</div>
+          <div class="card-sub">Configure marks for question ranges</div>
+        </div>
+        <button class="btn-outline-sm" (click)="addRange()" [disabled]="loading">
+          + Add Range
+        </button>
+      </div>
+
+      <div class="range-scroll" *ngIf="loading">
+        <div class="skeleton-row" *ngFor="let s of [1,2]">
+          <div class="skel skel-field" *ngFor="let f of [1,2,3,4,5]"></div>
+          <div class="skel skel-icon"></div>
+        </div>
+      </div>
+
+      <div class="range-scroll" *ngIf="!loading">
+        <div *ngIf="ranges.length === 0" class="empty-hint">
+          No rules defined — default scoring (correct: 1, wrong: 0, empty: 0) will apply.
+        </div>
+
+        <div class="range-hdr" *ngIf="ranges.length > 0">
+          <span>From</span><span>To</span>
+          <span>Correct</span><span>Wrong</span><span>Empty</span>
+          <span></span>
+        </div>
+
+        <div class="range-row" *ngFor="let range of ranges; let i = index">
+          <div class="range-field">
+            <input type="number" min="1" max="40" [(ngModel)]="range.from" placeholder="1"/>
+          </div>
+          <div class="range-field">
+            <input type="number" min="1" max="40" [(ngModel)]="range.to" placeholder="40"/>
+          </div>
+          <div class="range-field">
+            <input type="number" step="0.5" [(ngModel)]="range.correct"/>
+          </div>
+          <div class="range-field">
+            <input type="number" step="0.5" [(ngModel)]="range.wrong"/>
+          </div>
+          <div class="range-field">
+            <input type="number" step="0.5" [(ngModel)]="range.empty"/>
+          </div>
+          <button class="del-btn" (click)="removeRange(i)">
+            x
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">
+            Answer Keys
+            <span class="level-tag">{{ formatLevel(selectedLevel) }}</span>
+          </div>
+          <div class="card-sub" *ngIf="!loading">
+            {{ setCount }} / 40 answered
+            <span class="dirty-badge" *ngIf="isDirty">· unsaved changes</span>
+          </div>
+          <div class="card-sub" *ngIf="loading">Loading…</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-ghost"
+            (click)="cancelEdit()"
+            [disabled]="!isDirty || loading">
+            Cancel
+          </button>
+          <button class="btn-primary"
+            (click)="saveAnswerKey()"
+            [disabled]="saving || !isDirty || loading">
+            {{ saving ? 'Saving…' : 'Save Key' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="opt-legend" *ngIf="!loading">
+        <div class="legend-item" *ngFor="let opt of options">
+          <span class="legend-dot" [class]="'legend-dot dot-' + opt.toLowerCase()"></span>
+          {{ opt }}
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot dot-unset"></span>
+          Unset
+        </div>
+      </div>
+
+      <div class="answers-grid" *ngIf="loading">
+        <div class="answer-cell skel-cell" *ngFor="let q of questions">
+          <div class="skel skel-qlabel"></div>
+          <div class="skel-opt-row">
+            <div class="skel skel-opt" *ngFor="let o of options"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="answers-grid" *ngIf="!loading">
+        <div
+          class="answer-cell"
+          *ngFor="let q of questions"
+          [class.is-set]="editData[q.key]">
+
+          <span class="q-label">{{ q.label }}</span>
+
+          <div class="opt-row">
+            <button
+              *ngFor="let opt of options"
+              class="opt-btn"
+              [class]="'opt-btn ' + (editData[q.key] === opt ? 'sel-' + opt.toLowerCase() : '')"
+              (click)="selectOption(q.key, opt)">
+              {{ opt }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
