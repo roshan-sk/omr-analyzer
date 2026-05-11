@@ -71,7 +71,7 @@ pip install -r requirements.txt
 If `requirements.txt` is not present, install core packages manually:
 
 ```bash
-pip install flask flask-cors opencv-python numpy Pillow
+pip install flask flask-sqlalchemy flask-jwt-extended flask-cors pymysql opencv-python numpy Pillow openpyxl werkzeug python-dotenv
 ```
 
 #### Configure environment variables
